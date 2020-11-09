@@ -106,8 +106,9 @@ class Pawn(Piece):
         self.find_possible_attacks()
         for square in self.possible_attacks:
             field = chessboard.chessboard[square[0]][square[1]]
-            if field.location == attacked.location:
-                return True
+            if isinstance(field, Piece):
+                if field.location == attacked.location:
+                    return True
 
         return False
 
