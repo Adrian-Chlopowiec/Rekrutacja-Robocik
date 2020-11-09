@@ -18,7 +18,7 @@ class King(Piece):
                       lambda: (self.location[0] + 1, self.location[1] - 1)
                       ]
 
-    def find_possible_moves(self, chessboard, white_pieces: List[Piece]):
+    def find_possible_moves(self, chessboard, enemy_pieces: List[Piece]):
         # Punkt 1
         self.possible_moves = []
         locations = []
@@ -33,7 +33,7 @@ class King(Piece):
         for location in locations:
             is_attacked = False
             field = chessboard.chessboard[location[0]][location[1]]
-            for piece in white_pieces:
+            for piece in enemy_pieces:
                 # TODO: wymyślić lepszy sposób (zoptymalizować użycia find_possible_moves?)
                 # Nie optymalne rozwiązanie
                 if piece.attacks(field, chessboard):

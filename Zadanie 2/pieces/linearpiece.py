@@ -21,7 +21,7 @@ class LinearPiece(Piece, ABC):
                 else:
                     field = chessboard.chessboard[self.location[0]][self.location[1]]
                     if isinstance(field, Piece):
-                        if field.color == Color.BLACK:
+                        if field.color == self.enemy_color:
                             self.possible_moves.append(field)
                             can_move = False
                         else:
@@ -32,42 +32,43 @@ class LinearPiece(Piece, ABC):
             self.location = copy(original_location)
         return
 
-    def select_mating_fields(self, active_white_pieces: List[Piece], chessboard) -> Optional[Tuple[Field]]:
+    def select_mating_fields(self, active_pieces: List[Piece], chessboard) -> Optional[Tuple[Field]]:
         # Znajduje pola matujące - czyli takie na których figura atakuje króla i wszyskie pola na które może się
         # on ruszyć. Nie sprawdza czy figura może zostać na nim zbita przez króla lub inną figurę, ani nie sprawdza
         # czy linia ataku figury na króla może zostać zablokowana przez figurę przeciwnika
+
         self.mating_fields = []
         original_location = copy(self.location)
-        black_king = chessboard.get_black_king()  # Może warto by było je przesyłać do metody, albo umieścić jako pole Chessboard?
-        black_pieces = chessboard.get_all_black_pieces()  # To samo co wyżej
-        black_pieces.remove(black_king)
+        enemy_king = chessboard.get_king(self.enemy_color)  # Może warto by było je przesyłać do metody, albo umieścić jako pole Chessboard?
+        enemy_pieces = chessboard.get_all_pieces(self.enemy_color)  # To samo co wyżej
+        enemy_pieces.remove(enemy_king)
 
         for field in self.possible_moves:
             changed_chessboard, deleted_piece = chessboard.change_board(self, field)
             if deleted_piece is not None:
-                black_pieces.remove(deleted_piece)
-            active_whites_copy = copy(active_white_pieces)
-            black_king.find_possible_moves(changed_chessboard, active_whites_copy)
-            active_whites_copy.remove(self)
+                enemy_pieces.remove(deleted_piece)
+            active_pieces_copy = copy(active_pieces)
+            enemy_king.find_possible_moves(changed_chessboard, active_pieces_copy)
+            active_pieces_copy.remove(self)
 
-            if len(black_king.possible_moves) == 0:
+            if len(enemy_king.possible_moves) == 0:
                 # To mogę sprawdzić to co w chessboard.check_mates
                 field_is_mating = True
-                if self.attacks_king(black_king, changed_chessboard):
-                    if black_king.attacks(self, changed_chessboard):
-                        if changed_chessboard.is_defended(self, active_whites_copy):
-                            is_attacked = changed_chessboard.is_attacked(self, black_pieces)
+                if self.attacks_king(enemy_king, changed_chessboard):
+                    if enemy_king.attacks(self, changed_chessboard):
+                        if changed_chessboard.is_defended(self, active_pieces_copy):
+                            is_attacked = changed_chessboard.is_attacked(self, enemy_pieces)
                             if is_attacked is not None:
                                 field_is_mating = False
                             else:
                                 field_is_mating = True
                         else:
                             field_is_mating = False
-                    elif changed_chessboard.is_attacked(self, black_pieces) is None:
+                    elif changed_chessboard.is_attacked(self, enemy_pieces) is None:
                         for square in self.king_attack_line_:
                             # Jeżeli ten if nie przejdzie to field_is_mating jest True
                             # TODO: Optymalizacja - czy muszę za każdym razem szukać ruchów czarnych figur?
-                            figure = changed_chessboard.is_attacked(square, black_pieces)
+                            figure = changed_chessboard.is_attacked(square, enemy_pieces)
                             if figure is not None:
                                 field_is_mating = False
                                 break
@@ -84,11 +85,11 @@ class LinearPiece(Piece, ABC):
             field.location = copy(self.location)
             self.location = copy(original_location)
             if deleted_piece is not None:
-                black_pieces.append(deleted_piece)
+                enemy_pieces.append(deleted_piece)
         return None
 
     def attacks(self, attacked: Field, chessboard) -> bool:
-        # Ignores Black King if piece is White
+        # Ignores Enemy King
         original_location = copy(self.location)
 
         for move in self.moves:
@@ -103,14 +104,10 @@ class LinearPiece(Piece, ABC):
                     if attacked.location == field.location:
                         self.location = copy(original_location)
                         return True
-                    else:
-                        if self.color == Color.WHITE:
-                            if isinstance(field, Piece) and not (
-                                    isinstance(field, King) and field.color == Color.BLACK):
-                                can_move = False
-                        else:
-                            if isinstance(field, Piece):
-                                can_move = False
+                    elif isinstance(field, Piece):
+                        if not (isinstance(field, King) and field.color == self.enemy_color):
+                            can_move = False
+
             self.location = copy(original_location)
 
         return False
