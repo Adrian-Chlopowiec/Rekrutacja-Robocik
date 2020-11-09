@@ -11,13 +11,25 @@ class Pawn(Piece):
         super().__init__(x, y, color)
         self.possible_attacks = []
         if color == Color.WHITE:
-            self.moves = [lambda: (self.location[0] - 1, self.location[1]),
-                          lambda: (self.location[0] - 1, self.location[1] - 1),
-                          lambda: (self.location[0] - 1, self.location[1] + 1)]
+            if self.location[0] == 6:
+                self.moves = [lambda: (self.location[0] - 1, self.location[1]),
+                              lambda: (self.location[0] - 1, self.location[1] - 1),
+                              lambda: (self.location[0] - 1, self.location[1] + 1),
+                              lambda: (self.location[0] - 2, self.location[1])]
+            else:
+                self.moves = [lambda: (self.location[0] - 1, self.location[1]),
+                              lambda: (self.location[0] - 1, self.location[1] - 1),
+                              lambda: (self.location[0] - 1, self.location[1] + 1)]
         else:
-            self.moves = [lambda: (self.location[0] + 1, self.location[1]),
-                          lambda: (self.location[0] + 1, self.location[1] - 1),
-                          lambda: (self.location[0] + 1, self.location[1] + 1)]
+            if self.location[0] == 1:
+                self.moves = [lambda: (self.location[0] + 1, self.location[1]),
+                              lambda: (self.location[0] + 1, self.location[1] - 1),
+                              lambda: (self.location[0] + 1, self.location[1] + 1),
+                              lambda: (self.location[0] + 2, self.location[1])]
+            else:
+                self.moves = [lambda: (self.location[0] + 1, self.location[1]),
+                              lambda: (self.location[0] + 1, self.location[1] - 1),
+                              lambda: (self.location[0] + 1, self.location[1] + 1)]
 
     def find_possible_attacks(self) -> NoReturn:
         if self.location[0] == 0:
@@ -33,6 +45,7 @@ class Pawn(Piece):
     def find_possible_moves(self, chessboard) -> NoReturn:
         self.possible_moves = []
         locations = []
+        is_square_infront_empty = False
         for move in self.moves:
             locations.append(move())
 
@@ -44,6 +57,7 @@ class Pawn(Piece):
         if 0 <= locations[0][0] <= 7 and 0 <= locations[0][1] <= 7:
             field = chessboard.chessboard[locations[0][0]][locations[0][1]]
             if not isinstance(field, Piece):
+                is_square_infront_empty = True
                 self.possible_moves.append(field)
 
         if 0 <= locations[1][0] <= 7 and 0 <= locations[1][1] <= 7:
@@ -55,6 +69,12 @@ class Pawn(Piece):
             field = chessboard.chessboard[locations[2][0]][locations[2][1]]
             if isinstance(field, Piece) and field.color == self.enemy_color:
                 self.possible_moves.append(field)
+
+        if len(locations) == 4 and is_square_infront_empty:
+            if 0 <= locations[3][0] <= 7 and 0 <= locations[3][1] <= 7:
+                field = chessboard.chessboard[locations[3][0]][locations[3][1]]
+                if not isinstance(field, Piece):
+                    self.possible_moves.append(field)
 
     def select_mating_fields(self, active_pieces: List[Piece], chessboard) -> Optional[Tuple[Field]]:
         # TODO: Zrobić sprawdzenie z check_mates
@@ -109,6 +129,15 @@ class Pawn(Piece):
             if isinstance(field, Piece):
                 if field.location == attacked.location:
                     return True
+
+        return False
+
+    def attacks_king_field(self, attacked: Field, chessboard):
+        self.find_possible_attacks()
+        for square in self.possible_attacks:
+            field = chessboard.chessboard[square[0]][square[1]]
+            if field.location == attacked.location:
+                return True
 
         return False
 

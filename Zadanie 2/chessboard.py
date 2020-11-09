@@ -93,9 +93,7 @@ class Chessboard:
                 if isinstance(field, Piece) and field.color == Color.WHITE:
                     if isinstance(field, Pawn):
                         if (abs(y - black_king.location[1]) <= 2
-                                and (abs(x - black_king.location[0]) == 1
-                                     or abs(x - black_king.location[0]) == 2
-                                     or abs(x - black_king.location[0]) == 0)):
+                                and 0 <= abs(x - black_king.location[0]) <= 3):
                             queue.put(PrioritizedPiece(3, field))
                     else:
                         # Queen, Rook or Bishop
@@ -131,13 +129,14 @@ class Chessboard:
 
     def check_for_mates(self) -> Optional[Tuple[Union[Piece, Field]]]:
         active_white_pieces = queue_to_list(self.possible_mating_pieces)
+        active_white_pieces.append(self.get_king(Color.WHITE))
         for piece in active_white_pieces:
             mate = piece.select_mating_fields(active_white_pieces, self)
             if mate is not None:
                 return mate
 
         black_pieces = self.get_all_pieces(Color.BLACK)
-        black_pieces.remove(self.get_king(Color.BLACK))
+        # black_pieces.remove(self.get_king(Color.BLACK))
         for piece in black_pieces:
             mate = piece.select_mating_fields(black_pieces, self)
             if mate is not None:
@@ -156,7 +155,10 @@ class Chessboard:
 
     def find_moves_for(self, pieces: List[Piece]):
         for piece in pieces:
-            piece.find_possible_moves(self)
+            if isinstance(piece, King):
+                piece.find_attacked_fields(self)
+            else:
+                piece.find_possible_moves(self)
 
     def is_defended(self, field: Field, pieces: List[Piece]) -> bool:
         is_defended = self.is_attacked(field, pieces, find_moves=False)
