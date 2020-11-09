@@ -8,6 +8,10 @@ class Piece(Field):
     def __init__(self, x: int, y: int, color: Color):
         super().__init__(x, y)
         self.color = color
+        if color == Color.WHITE:
+            self.enemy_color = Color.BLACK
+        else:
+            self.enemy_color = Color.WHITE
         self.possible_moves = List[Tuple]
         self.mating_fields = List[Tuple]  # TODO: To chyba do usunięcia?
         # types_of_moves jest listą funkcji przekształcających aktualną lokalizację na następne pole

@@ -1,6 +1,6 @@
 from copy import copy
 from queue import PriorityQueue
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Union
 
 from color import Color
 from pieces.bishop import Bishop
@@ -86,7 +86,7 @@ class Chessboard:
     def find_possible_mating_pieces(self):
         # Punkt 2
         queue = PriorityQueue()
-        black_king = self.get_black_king()
+        black_king = self.get_king(Color.BLACK)
         for x in range(len(self.chessboard)):
             for y in range(len(self.chessboard[x])):
                 field = self.chessboard[x][y]
@@ -113,26 +113,33 @@ class Chessboard:
     def find_blocking_figures(self):
         return
 
-    def get_black_king(self):
+    def get_king(self, color: Color) -> Piece:
         for i in range(len(self.chessboard)):
             for j in range(len(self.chessboard)):
                 field = self.chessboard[i][j]
-                if isinstance(field, King) and field.color == Color.BLACK:
+                if isinstance(field, King) and field.color == color:
                     return field
 
-    def get_all_black_pieces(self) -> List[Piece]:
-        black_pieces = []
+    def get_all_pieces(self, color: Color) -> List[Piece]:
+        pieces = []
         for i in range(len(self.chessboard)):
             for j in range(len(self.chessboard)):
                 field = self.chessboard[i][j]
-                if isinstance(field, Piece) and field.color == Color.BLACK:
-                    black_pieces.append(field)
-        return black_pieces
+                if isinstance(field, Piece) and field.color == color:
+                    pieces.append(field)
+        return pieces
 
-    def check_for_mates(self) -> Optional[Tuple[Field]]:
+    def check_for_mates(self) -> Optional[Tuple[Union[Piece, Field]]]:
         active_white_pieces = queue_to_list(self.possible_mating_pieces)
         for piece in active_white_pieces:
             mate = piece.select_mating_fields(active_white_pieces, self)
+            if mate is not None:
+                return mate
+
+        black_pieces = self.get_all_pieces(Color.BLACK)
+        black_pieces.remove(self.get_king(Color.BLACK))
+        for piece in black_pieces:
+            mate = piece.select_mating_fields(black_pieces, self)
             if mate is not None:
                 return mate
         return None

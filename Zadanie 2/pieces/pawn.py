@@ -32,56 +32,59 @@ class Pawn(Piece):
 
     def find_possible_moves(self, chessboard) -> NoReturn:
         self.possible_moves = []
-        loc_move0 = self.moves[0]()
-        loc_move1 = self.moves[1]()
-        loc_move2 = self.moves[2]()
+        locations = []
+        for move in self.moves:
+            locations.append(move())
 
         if self.color == Color.WHITE and self.location[0] == 0:
             return
         elif self.color == Color.BLACK and self.location[0] == 7:
             return
 
-        # Zastąpić chessboard.chessboard... przypisaniem do zmiennej wcześniej?
-        elif not isinstance(chessboard.chessboard[loc_move0[0]][loc_move0[1]], Piece):
-            self.possible_moves.append(chessboard.chessboard[loc_move0[0]][loc_move0[1]])
+        if 0 <= locations[0][0] <= 7 and 0 <= locations[0][1] <= 7:
+            field = chessboard.chessboard[locations[0][0]][locations[0][1]]
+            if not isinstance(field, Piece):
+                self.possible_moves.append(field)
 
-        elif isinstance(chessboard.chessboard[loc_move1[0]][loc_move1[1]], Piece) \
-                and chessboard.chessboard[loc_move1[0]][loc_move1[1]].color == Color.BLACK:
-            self.possible_moves.append(chessboard.chessboard[loc_move1[0]][loc_move1[1]])
+        if 0 <= locations[1][0] <= 7 and 0 <= locations[1][1] <= 7:
+            field = chessboard.chessboard[locations[1][0]][locations[1][1]]
+            if isinstance(field, Piece) and field.color == self.enemy_color:
+                self.possible_moves.append(field)
 
-        elif isinstance(chessboard.chessboard[loc_move2[0]][loc_move2[1]], Piece) \
-                and chessboard.chessboard[loc_move2[0]][loc_move2[1]].color == Color.BLACK:
-            self.possible_moves.append(chessboard.chessboard[loc_move2[0]][loc_move2[1]])
+        if 0 <= locations[2][0] <= 7 and 0 <= locations[2][1] <= 7:
+            field = chessboard.chessboard[locations[2][0]][locations[2][1]]
+            if isinstance(field, Piece) and field.color == self.enemy_color:
+                self.possible_moves.append(field)
 
-    def select_mating_fields(self, active_white_pieces: List[Piece], chessboard) -> Optional[Tuple[Field]]:
+    def select_mating_fields(self, active_pieces: List[Piece], chessboard) -> Optional[Tuple[Field]]:
         # TODO: Zrobić sprawdzenie z check_mates
         self.mating_fields = []
         original_location = copy(self.location)
-        black_king = chessboard.get_black_king()
-        black_pieces = chessboard.get_all_black_pieces()
-        black_pieces.remove(black_king)
+        enemy_king = chessboard.get_king(self.enemy_color)
+        enemy_pieces = chessboard.get_all_pieces(self.enemy_color)
+        enemy_pieces.remove(enemy_king)
 
         for field in self.possible_moves:
             changed_chessboard, deleted_piece = chessboard.change_board(self, field)
             if deleted_piece is not None:
-                black_pieces.remove(deleted_piece)
-            active_whites_copy = copy(active_white_pieces)
-            black_king.find_possible_moves(changed_chessboard, active_whites_copy)
-            active_whites_copy.remove(self)
+                enemy_pieces.remove(deleted_piece)
+            active_pieces_copy = copy(active_pieces)
+            enemy_king.find_possible_moves(changed_chessboard, active_pieces_copy)
+            active_pieces_copy.remove(self)
 
-            if len(black_king.possible_moves) == 0:
+            if len(enemy_king.possible_moves) == 0:
                 field_is_mating = True
-                if self.attacks(black_king, changed_chessboard):
-                    if black_king.attacks(field, changed_chessboard):
-                        if changed_chessboard.is_defended(self, active_whites_copy):
-                            if changed_chessboard.is_attacked(self, black_pieces) is not None:
+                if self.attacks(enemy_king, changed_chessboard):
+                    if enemy_king.attacks(field, changed_chessboard):
+                        if changed_chessboard.is_defended(self, active_pieces_copy):
+                            if changed_chessboard.is_attacked(self, enemy_pieces) is not None:
                                 field_is_mating = False
                             else:
                                 field_is_mating = True
                         else:
                             field_is_mating = False
                     else:
-                        if changed_chessboard.is_attacked(self, black_pieces) is None:
+                        if changed_chessboard.is_attacked(self, enemy_pieces) is None:
                             field_is_mating = True
                         else:
                             field_is_mating = False
@@ -94,7 +97,9 @@ class Pawn(Piece):
                     field.location = tmp
                     return self, field
             field.location = copy(self.location)
-            self.location = field.location
+            self.location = copy(original_location)
+            if deleted_piece is not None:
+                enemy_pieces.append(deleted_piece)
         return None
 
     def attacks(self, attacked: Field, chessboard):

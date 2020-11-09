@@ -27,30 +27,29 @@ class Knight(Piece):
         for location in moves:
             if not (location[0] < 0 or location[0] > 7 or location[1] < 0 or location[1] > 7):
                 field = chessboard.chessboard[location[0]][location[1]]
-                if not (isinstance(field, Piece) and field.color == Color.WHITE):
+                if not (isinstance(field, Piece) and field.color == self.color):
                     self.possible_moves.append(field)
 
-    def select_mating_fields(self, active_white_pieces: List[Piece], chessboard) -> Optional[Tuple[Field]]:
-        # TODO: Tak samo jak w linearpiece, zrobić sprawdzanie z check_mates
+    def select_mating_fields(self, active_pieces: List[Piece], chessboard) -> Optional[Tuple[Field]]:
         self.mating_fields = []
         original_location = copy(self.location)
-        black_king = chessboard.get_black_king()
-        black_pieces = chessboard.get_all_black_pieces()
-        black_pieces.remove(black_king)
+        enemy_king = chessboard.get_king(self.enemy_color)
+        enemy_pieces = chessboard.get_all_pieces(self.enemy_color)
+        enemy_pieces.remove(enemy_king)
 
         for field in self.possible_moves:
             # TODO: wydzielić to do funkcji i zwracać odpowiedni stuff z niej
             changed_chessboard, deleted_piece = chessboard.change_board(self, field)
             if deleted_piece is not None:
-                black_pieces.remove(deleted_piece)
-            active_whites_copy = copy(active_white_pieces)
-            black_king.find_possible_moves(changed_chessboard, active_whites_copy)
-            active_whites_copy.remove(self)
+                enemy_pieces.remove(deleted_piece)
+            active_pieces_copy = copy(active_pieces)
+            enemy_king.find_possible_moves(changed_chessboard, active_pieces_copy)
+            active_pieces_copy.remove(self)
 
-            if len(black_king.possible_moves) == 0:
+            if len(enemy_king.possible_moves) == 0:
                 field_is_mating = True
-                if self.attacks(black_king, changed_chessboard):
-                    if changed_chessboard.is_attacked(self, black_pieces) is None:
+                if self.attacks(enemy_king, changed_chessboard):
+                    if changed_chessboard.is_attacked(self, enemy_pieces) is None:
                         field_is_mating = True
                     else:
                         field_is_mating = False
@@ -64,6 +63,8 @@ class Knight(Piece):
                     return self, field
             field.location = copy(self.location)
             self.location = copy(original_location)
+            if deleted_piece is not None:
+                enemy_pieces.append(deleted_piece)
         return None
 
     def attacks(self, attacked: Field, chessboard) -> bool:
