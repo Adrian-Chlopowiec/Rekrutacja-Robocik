@@ -1,10 +1,11 @@
 import socket
+
 from speedometer import Speedometer
 
 
 def parse_response(response: str):
     """
-    Parses response to retrieve point and time from its body.
+    Parses response to retrieve point and time from its body.\n
     :param response: str
     :return: dict: contains point and time
     """
@@ -17,7 +18,7 @@ def parse_response(response: str):
 
 def convert_to_list(string: str):
     """
-    Converts string of coordinates to list
+    Converts string of coordinates to list.\n
     :param string: str: string of coordinates
     :return: list
     """
@@ -29,17 +30,15 @@ def convert_to_list(string: str):
 
 class Client:
     """
-    Class responsible for retrieving object localization through http protocol
+    Class responsible for retrieving object localization through http protocol\n
+    :param client: socket for managing connection
     """
     def __init__(self):
-        """
-        :var self.client: socket for managing connection
-        """
         self.client = None
 
     def manage_client(self):
         """
-        Creates connection between Client and server
+        Creates connection between Client and server\n
         :return: None
         """
         self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -47,7 +46,7 @@ class Client:
 
     def send_requests(self, speedometer: Speedometer):
         """
-        Sends requests for localization to the object until receiving stop message
+        Sends requests for localization to the object until receiving stop message\n
         :param speedometer: Speedometer
         :return: None
         """
@@ -60,7 +59,7 @@ class Client:
 
     def __parse_and_print_response(self, response: bytes, speedometer: Speedometer):
         """
-        Parses response to retrieve point and time from its body, then prints them.
+        Parses response to retrieve point and time from its body, then prints them.\n
         :param response: bytes: containing information about localization of the object
         :param speedometer: Speedometer
         :return: Boolean: signals whether stop message was sent
