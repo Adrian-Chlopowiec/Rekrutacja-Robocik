@@ -98,6 +98,8 @@ class LinearPiece(Piece, ABC):
         return possible_mates
 
     def attacks(self, attacked: Field, chessboard) -> bool:
+        if attacked is self:
+            return False
         original_location = copy(self.location)
 
         for move in self.moves:

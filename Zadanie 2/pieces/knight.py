@@ -84,6 +84,9 @@ class Knight(Piece):
         :param chessboard: Chessboard on which the Piece and Field are.
         :return: True if piece attacks field, False otherwise.
         """
+        if attacked is self:
+            return False
+
         moves = [self.moves[0](), self.moves[1](), self.moves[2](), self.moves[3](), self.moves[4](), self.moves[5](),
                  self.moves[6](), self.moves[7]()]
 

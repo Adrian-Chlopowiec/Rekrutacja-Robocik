@@ -1,5 +1,5 @@
 from copy import copy
-from typing import List, NoReturn, Optional, Tuple
+from typing import List, NoReturn, Tuple
 
 from color import Color
 from pieces.field import Field
@@ -137,6 +137,8 @@ class Pawn(Piece):
         return possible_mates
 
     def attacks(self, attacked: Field, chessboard):
+        if attacked is self:
+            return False
         self.find_possible_attacks()
         for square in self.possible_attacks:
             field = chessboard.chessboard[square[0]][square[1]]
@@ -153,6 +155,8 @@ class Pawn(Piece):
         :param chessboard: Chessboard on which Pawn and Field are.
         :return: True if pawn attacks field, False otherwise.
         """
+        if attacked is self:
+            return False
         self.find_possible_attacks()
         for square in self.possible_attacks:
             field = chessboard.chessboard[square[0]][square[1]]

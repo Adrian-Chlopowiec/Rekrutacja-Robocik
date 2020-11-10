@@ -1,6 +1,6 @@
 from copy import copy
 from queue import PriorityQueue
-from typing import List, Optional, Tuple, Union, NoReturn, Any
+from typing import List, Optional, Tuple, NoReturn, Any
 
 from color import Color
 from pieces.bishop import Bishop

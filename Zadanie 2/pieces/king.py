@@ -43,7 +43,10 @@ class King(Piece):
             if 0 <= location[0] <= 7 \
                     and 0 <= location[1] <= 7:
                 field = chessboard.chessboard[location[0]][location[1]]
-                if not isinstance(field, Piece):
+                if not (isinstance(field, Piece) and field.color == self.color)\
+                        and ((isinstance(field, Piece) and field.color == self.enemy_color
+                              and not chessboard.is_defended(field, enemy_pieces))
+                             or not isinstance(field, Piece)):
                     locations.append(location)
 
         for location in locations:
