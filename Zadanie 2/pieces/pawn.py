@@ -7,6 +7,15 @@ from pieces.piece import Piece
 
 
 class Pawn(Piece):
+    """
+    Class representing Pawn.\n
+    :param x: Location of piece on vertical axis
+    :param y: Location of piece on horizontal axis
+    :param color: Color of this piece
+    :param possible_moves: List of possible moves
+    :param moves: List of anonymous functions changing one location into another representing types of moves of piece.
+    :param possible_attacks: List of fields Pawn attacks
+    """
     def __init__(self, x: int, y: int, color: Color):
         super().__init__(x, y, color)
         self.possible_attacks = []
@@ -32,15 +41,18 @@ class Pawn(Piece):
                               lambda: (self.location[0] + 1, self.location[1] + 1)]
 
     def find_possible_attacks(self) -> NoReturn:
+        """
+        Checks which fields does this Pawn attack.
+        :return: None
+        """
         if self.location[0] == 0:
             self.possible_attacks = []
         elif self.location[1] == 0:
-            self.possible_attacks = [self.moves[2]()]  # [(self.location[0] - 1, self.location[1] + 1)]
+            self.possible_attacks = [self.moves[2]()]
         elif self.location[1] == 7:
-            self.possible_attacks = [self.moves[1]()]  # [(self.location[0] - 1, self.location[1] - 1)]
+            self.possible_attacks = [self.moves[1]()]
         else:
             self.possible_attacks = [self.moves[1](), self.moves[2]()]
-            # [(self.location[0] - 1, self.location[1] - 1),(self.location[0] - 1, self.location[1] + 1)]
 
     def find_possible_moves(self, chessboard) -> NoReturn:
         self.possible_moves = []
@@ -76,35 +88,32 @@ class Pawn(Piece):
                 if not isinstance(field, Piece):
                     self.possible_moves.append(field)
 
-    def select_mating_fields(self, active_pieces: List[Piece], chessboard) -> Optional[Tuple[Field]]:
-        # TODO: Zrobić sprawdzenie z check_mates
-        self.mating_fields = []
+    def find_mate(self, active_pieces: List[Piece], chessboard) -> Optional[Tuple[Piece, Field]]:
         original_location = copy(self.location)
         enemy_king = chessboard.get_king(self.enemy_color)
         enemy_pieces = chessboard.get_all_pieces(self.enemy_color)
         enemy_pieces.remove(enemy_king)
 
         for field in self.possible_moves:
-            changed_chessboard, deleted_piece = chessboard.change_board(self, field)
+            imaginary_board, deleted_piece = chessboard.create_imaginary_board(self, field)
             if deleted_piece is not None:
                 enemy_pieces.remove(deleted_piece)
             active_pieces_copy = copy(active_pieces)
-            enemy_king.find_possible_moves(changed_chessboard, active_pieces_copy)
+            enemy_king.find_possible_moves(imaginary_board, active_pieces_copy)
             active_pieces_copy.remove(self)
 
             if len(enemy_king.possible_moves) == 0:
-                field_is_mating = True
-                if self.attacks(enemy_king, changed_chessboard):
-                    if enemy_king.attacks(field, changed_chessboard):
-                        if changed_chessboard.is_defended(self, active_pieces_copy):
-                            if changed_chessboard.is_attacked(self, enemy_pieces) is not None:
+                if self.attacks(enemy_king, imaginary_board):
+                    if enemy_king.attacks(field, imaginary_board):
+                        if imaginary_board.is_defended(self, active_pieces_copy):
+                            if imaginary_board.is_attacked(self, enemy_pieces) is not None:
                                 field_is_mating = False
                             else:
                                 field_is_mating = True
                         else:
                             field_is_mating = False
                     else:
-                        if changed_chessboard.is_attacked(self, enemy_pieces) is None:
+                        if imaginary_board.is_attacked(self, enemy_pieces) is None:
                             field_is_mating = True
                         else:
                             field_is_mating = False
@@ -132,7 +141,13 @@ class Pawn(Piece):
 
         return False
 
-    def attacks_king_field(self, attacked: Field, chessboard):
+    def attacks_king_field(self, attacked: Field, chessboard) -> bool:
+        """
+        Checks if this Pawn attacks fields onto which King can move.
+        :param attacked: field to check if it is attacked
+        :param chessboard: Chessboard on which Pawn and Field are.
+        :return: True if pawn attacks field, False otherwise.
+        """
         self.find_possible_attacks()
         for square in self.possible_attacks:
             field = chessboard.chessboard[square[0]][square[1]]

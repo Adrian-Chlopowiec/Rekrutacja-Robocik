@@ -1,4 +1,9 @@
 class Field:
+    """
+    Class representing Field on Chessboard.\n
+    :param x: Location of piece on vertical axis
+    :param y: Location of piece on horizontal axis
+    """
     def __init__(self, x: int, y: int):
         self.location = (x, y)
 

@@ -1,6 +1,6 @@
 from copy import copy
 from queue import PriorityQueue
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union, NoReturn, Any
 
 from color import Color
 from pieces.bishop import Bishop
@@ -14,7 +14,12 @@ from pieces.queen import Queen
 from pieces.rook import Rook
 
 
-def parse(matrix: List[List[str]]) -> List[List]:
+def parse(matrix: List[List[str]]) -> List[List[Field]]:
+    """
+    Parses matrix of strings to matrix of fields and pieces on chessboard.
+    :param matrix: matrix of strings containing string representations of pieces and fields.
+    :return: matrix of fields and chess pieces representing chessboard.
+    """
     chessboard = list()
 
     for i in range(len(matrix)):
@@ -40,7 +45,12 @@ def parse(matrix: List[List[str]]) -> List[List]:
     return chessboard
 
 
-def queue_to_list(queue: PriorityQueue):
+def queue_to_list(queue: PriorityQueue) -> List[Piece]:
+    """
+    Copies elements of PriorityQueue to List in unchanged order.
+    :param queue: PriorityQueue to copy.
+    :return: List containing elements of PriorityQueue in unchanged order.
+    """
     elements = []
     queue_elems = []
     while queue.qsize() > 0:
@@ -53,47 +63,83 @@ def queue_to_list(queue: PriorityQueue):
 
 
 class Chessboard:
-    def __init__(self, chessboard: List[List[str]] = [[]]):
+    """
+    Class representing chessboard. It is also starting point for the algorithm. Performs operations for groups
+    of fields and pieces.
+
+    :param chessboard: matrix of strings containing string representations of pieces and fields
+    """
+    def __init__(self, chessboard: List[List[str]] = None):
+        """
+        :param chessboard: matrix of fields and chess pieces representing chessboard. Contains subclasses of Field.
+        """
+        if chessboard is None:
+            chessboard = [[]]
         self.chessboard = parse(chessboard)
-        self.possible_mating_pieces = PriorityQueue()
+        self.possible_mating_whites = PriorityQueue()
+        self.possible_mating_blacks = PriorityQueue()
 
-    def change_board(self, piece: Piece, field: Field):
-        other = Chessboard()
-        other.chessboard = self.copy_chessboard()
+    def find_mate(self) -> NoReturn:
+        """
+        Prepares white and black pieces and looks for a mate. Print appropriate message whether it finds mate or not.\n
+        :returns: None
+        """
+        self.__find_possible_mating_pieces(Color.WHITE)
+        self.__find_moves_for(queue_to_list(self.possible_mating_whites))
 
-        other.chessboard[field.location[0]].remove(field)
-        other.chessboard[piece.location[0]].remove(piece)
+        self.__find_possible_mating_pieces(Color.BLACK)
+        self.__find_moves_for(queue_to_list(self.possible_mating_blacks))
 
-        # other_piece = Piece(field.location[0], field.location[1], piece.color)
-        # other_field = Field(piece.location[0], piece.location[1])
-        deleted_piece = None
-        if isinstance(field, Piece):
-            new_field = Field(field.location[0], field.location[1])
-            tmp = copy(new_field.location)
-            new_field.location = copy(piece.location)
-            piece.location = tmp
-            other.chessboard[new_field.location[0]].insert(new_field.location[1], new_field)
-            deleted_piece = field
+        mate = self.__check_for_mates()
+        if mate is None:
+            print("Biały ani czarny nie może wygrać w jednym ruchu")
+        elif mate[0].color == Color.WHITE:
+            print("Biały może wygrać " + mate[0].to_string() + " - " + mate[1].to_string())
         else:
-            tmp = copy(field.location)
-            field.location = copy(piece.location)
-            piece.location = tmp
-            other.chessboard[field.location[0]].insert(field.location[1], field)
-        other.chessboard[piece.location[0]].insert(piece.location[1], piece)
+            print("Czarny może wygrać " + mate[0].to_string() + " - " + mate[1].to_string())
 
-        return other, deleted_piece
+    def __check_for_mates(self) -> Optional[Tuple[Union[Piece, Field]]]:
+        """
+        For every possible mating piece of each color check if it can give a checkmate.
+        Firstly does it for white pieces and then for black.\n
 
-    def find_possible_mating_pieces(self):
-        # Punkt 2
+        :returns: tuple of piece giving a checkmate and a field to move it to give the mate, if such exist else None.
+        """
+        active_white_pieces = queue_to_list(self.possible_mating_whites)
+        active_white_pieces.append(self.get_king(Color.WHITE))
+        for piece in active_white_pieces:
+            mate = piece.find_mate(active_white_pieces, self)
+            if mate is not None:
+                return mate
+
+        active_black_pieces = queue_to_list(self.possible_mating_blacks)
+        active_black_pieces.append(self.get_king(Color.BLACK))
+        for piece in active_black_pieces:
+            mate = piece.find_mate(active_black_pieces, self)
+            if mate is not None:
+                return mate
+        return None
+
+    def __find_possible_mating_pieces(self, ally_color: Color) -> NoReturn:
+        """
+        Looks for pieces that might be a danger to opposing color King.\n
+        :param ally_color: color of pieces that want to mate.
+        :returns: None
+        """
+        if ally_color == Color.WHITE:
+            enemy_color = Color.BLACK
+        else:
+            enemy_color = Color.WHITE
+
         queue = PriorityQueue()
-        black_king = self.get_king(Color.BLACK)
+        enemy_king = self.get_king(enemy_color)
         for x in range(len(self.chessboard)):
             for y in range(len(self.chessboard[x])):
                 field = self.chessboard[x][y]
-                if isinstance(field, Piece) and field.color == Color.WHITE:
+                if isinstance(field, Piece) and field.color == ally_color:
                     if isinstance(field, Pawn):
-                        if (abs(y - black_king.location[1]) <= 2
-                                and 0 <= abs(x - black_king.location[0]) <= 3):
+                        if (abs(y - enemy_king.location[1]) <= 2
+                                and 0 <= abs(x - enemy_king.location[0]) <= 3):
                             queue.put(PrioritizedPiece(3, field))
                     else:
                         # Queen, Rook or Bishop
@@ -105,13 +151,17 @@ class Chessboard:
                             queue.put(PrioritizedPiece(1, field))
                         elif isinstance(field, Queen):
                             queue.put(PrioritizedPiece(0, field))
-        self.possible_mating_pieces = queue
-        return queue
-
-    def find_blocking_figures(self):
-        return
+        if ally_color == Color.WHITE:
+            self.possible_mating_whites = queue
+        else:
+            self.possible_mating_blacks = queue
 
     def get_king(self, color: Color) -> Piece:
+        """
+        Looks for king of given color and returns him.\n
+        :param color: Color of King to be looked for.
+        :return: king of given color
+        """
         for i in range(len(self.chessboard)):
             for j in range(len(self.chessboard)):
                 field = self.chessboard[i][j]
@@ -119,6 +169,11 @@ class Chessboard:
                     return field
 
     def get_all_pieces(self, color: Color) -> List[Piece]:
+        """
+        Looks for all pieces of given color and returns them\n
+        :param color: Color of pieces to be looked for
+        :return: list of pieces of given color
+        """
         pieces = []
         for i in range(len(self.chessboard)):
             for j in range(len(self.chessboard)):
@@ -127,47 +182,84 @@ class Chessboard:
                     pieces.append(field)
         return pieces
 
-    def check_for_mates(self) -> Optional[Tuple[Union[Piece, Field]]]:
-        active_white_pieces = queue_to_list(self.possible_mating_pieces)
-        active_white_pieces.append(self.get_king(Color.WHITE))
-        for piece in active_white_pieces:
-            mate = piece.select_mating_fields(active_white_pieces, self)
-            if mate is not None:
-                return mate
-
-        black_pieces = self.get_all_pieces(Color.BLACK)
-        # black_pieces.remove(self.get_king(Color.BLACK))
-        for piece in black_pieces:
-            mate = piece.select_mating_fields(black_pieces, self)
-            if mate is not None:
-                return mate
-        return None
-
-    def is_attacked(self, field: Piece, pieces: List[Piece], find_moves=True) -> Optional[Field]:  # Optional[Piece]?
-        # Zwraca None jeśli figura nie jest atakowana, w przeciwnym wypadku figurę atakującą
-        # Dla każdej figury przeciwnika sprawdzić, czy atakuje ona to pole.
-        if find_moves:
-            self.find_moves_for(pieces)
-        for piece in pieces:
-            if piece.attacks(field, self):
-                return piece
-        return None
-
-    def find_moves_for(self, pieces: List[Piece]):
+    def __find_moves_for(self, pieces: List[Piece]) -> NoReturn:
+        """
+        Finds available moves for every piece from given list. For King checks for field it attacks.\n
+        :param pieces: pieces to find moves for
+        :returns: None
+        """
         for piece in pieces:
             if isinstance(piece, King):
                 piece.find_attacked_fields(self)
             else:
                 piece.find_possible_moves(self)
 
-    def is_defended(self, field: Field, pieces: List[Piece]) -> bool:
+    def is_attacked(self, field: Piece, pieces: List[Piece], find_moves=True) -> Optional[Piece]:
+        """
+        Checks if any piece from given ones attacks given field. If needed, firstly finds available moves for them.\n
+        :param field: field to check if it is attacked
+        :param pieces: list of pieces proposed to attack the field
+        :param find_moves: if True, finds moves for pieces
+        :return: if exists, piece that attacks field. Otherwise None.
+        """
+        if find_moves:
+            self.__find_moves_for(pieces)
+        for piece in pieces:
+            if piece.attacks(field, self):
+                return piece
+        return None
+
+    def is_defended(self, field: Piece, pieces: List[Piece]) -> bool:
+        """
+        Checks if any piece from given list defends (which is synonymous for attacks) given field.\n
+        :param field: field to check if it is defended
+        :param pieces: list of pieces proposed to defend the field
+        :return: True if piece is defended, False otherwise.
+        """
         is_defended = self.is_attacked(field, pieces, find_moves=False)
         if is_defended is None:
             return False
         else:
             return True
 
-    def copy_chessboard(self):
+    def create_imaginary_board(self, piece: Piece, field: Field) -> Tuple[Any, Optional[Piece]]:
+        """
+        Creates imaginary board onto which pieces and fields from original board are copied.\n
+
+        Imaginary board is a chessboard used to move selected piece and check various cases of mates.
+
+        :param piece: piece which changes its location
+        :param field: field with which piece changed its location
+        :return: Imaginary Chessboard and piece taken on imaginary chessboard or None if no piece was taken.
+        """
+        imaginary = Chessboard()
+        imaginary.chessboard = self.__copy_chessboard()
+
+        imaginary.chessboard[field.location[0]].remove(field)
+        imaginary.chessboard[piece.location[0]].remove(piece)
+
+        deleted_piece = None
+        if isinstance(field, Piece):
+            new_field = Field(field.location[0], field.location[1])
+            tmp = copy(new_field.location)
+            new_field.location = copy(piece.location)
+            piece.location = tmp
+            imaginary.chessboard[new_field.location[0]].insert(new_field.location[1], new_field)
+            deleted_piece = field
+        else:
+            tmp = copy(field.location)
+            field.location = copy(piece.location)
+            piece.location = tmp
+            imaginary.chessboard[field.location[0]].insert(field.location[1], field)
+        imaginary.chessboard[piece.location[0]].insert(piece.location[1], piece)
+
+        return imaginary, deleted_piece
+
+    def __copy_chessboard(self) -> List[List[Field]]:
+        """
+        Copies own chessboard.\n
+        :return: matrix of fields.
+        """
         chessboard = list()
         i = 0
         for row in self.chessboard:

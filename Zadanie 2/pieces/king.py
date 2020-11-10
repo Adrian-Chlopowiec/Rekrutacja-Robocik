@@ -7,6 +7,15 @@ from pieces.piece import Piece
 
 
 class King(Piece):
+    """
+    Class representing King.\n
+    :param x: Location of piece on vertical axis
+    :param y: Location of piece on horizontal axis
+    :param color: Color of this piece
+    :param possible_moves: List of possible moves
+    :param moves: List of anonymous functions changing one location into another representing types of moves of piece.
+    :param attacked_fields: List of Fields King attacks
+    """
     def __init__(self, x: int, y: int, color: Color):
         super().__init__(x, y, color)
         self.moves = [lambda: (self.location[0] - 1, self.location[1]),
@@ -20,8 +29,13 @@ class King(Piece):
                       ]
         self.attacked_fields = []
 
-    def find_possible_moves(self, chessboard, enemy_pieces: List[Piece]):
-        # Punkt 1
+    def find_possible_moves(self, chessboard, enemy_pieces: List[Piece]) -> NoReturn:
+        """
+        Finds empty Fields which aren't attacked by enemy_pieces around the King
+        :param chessboard: Chessboard on which King and enemy pieces are.
+        :param enemy_pieces: enemy pieces that are threat to the King
+        :return:
+        """
         self.possible_moves = []
         locations = []
         for move in self.moves:
@@ -36,8 +50,6 @@ class King(Piece):
             is_attacked = False
             field = chessboard.chessboard[location[0]][location[1]]
             for piece in enemy_pieces:
-                # TODO: wymyślić lepszy sposób (zoptymalizować użycia find_possible_moves?)
-                # Nie optymalne rozwiązanie
                 if isinstance(piece, Pawn):
                     if piece.attacks_king_field(field, chessboard):
                         is_attacked = True
@@ -59,6 +71,11 @@ class King(Piece):
         return False
 
     def find_attacked_fields(self, chessboard) -> NoReturn:
+        """
+        Finds Empty fields that King attacks.
+        :param chessboard: Chessboard on which King is.
+        :return: None
+        """
         attacked_fields = []
         for move in self.moves:
             location = move()

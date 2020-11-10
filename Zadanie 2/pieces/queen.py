@@ -3,6 +3,15 @@ from pieces.linearpiece import LinearPiece
 
 
 class Queen(LinearPiece):
+    """
+    Class representing Queen.\n
+    :param x: Location of piece on vertical axis
+    :param y: Location of piece on horizontal axis
+    :param color: Color of this piece
+    :param possible_moves: List of possible moves
+    :param moves: List of anonymous functions changing one location into another representing types of moves of piece.
+    :param king_attack_line: List of Fields on line between this Piece and King.
+    """
     def __init__(self, x: int, y: int, color: Color):
         super().__init__(x, y, color)
         self.moves = [lambda: (self.location[0] - 1, self.location[1]),
