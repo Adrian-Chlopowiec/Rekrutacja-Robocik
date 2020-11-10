@@ -1,6 +1,6 @@
 from abc import ABC
 from copy import copy
-from typing import NoReturn, List, Optional, Tuple
+from typing import NoReturn, List, Tuple
 
 from color import Color
 from pieces.field import Field
@@ -45,7 +45,8 @@ class LinearPiece(Piece, ABC):
             self.location = copy(original_location)
         return
 
-    def find_mate(self, active_pieces: List[Piece], chessboard) -> Optional[Tuple[Piece, Field]]:
+    def find_mate(self, active_pieces: List[Piece], chessboard) -> List[Tuple[Piece, Field]]:
+        possible_mates: List[Tuple[Piece, Field]] = []
         original_location = copy(self.location)
         enemy_king = chessboard.get_king(self.enemy_color)
         enemy_pieces = chessboard.get_all_pieces(self.enemy_color)
@@ -59,8 +60,8 @@ class LinearPiece(Piece, ABC):
             enemy_king.find_possible_moves(imaginary_board, active_pieces_copy)
             active_pieces_copy.remove(self)
 
+            field_is_mating = True
             if len(enemy_king.possible_moves) == 0:
-                field_is_mating = True
                 if self.attacks_king(enemy_king, imaginary_board):
                     if enemy_king.attacks(self, imaginary_board):
                         if imaginary_board.is_defended(self, active_pieces_copy):
@@ -86,12 +87,15 @@ class LinearPiece(Piece, ABC):
                     tmp = copy(self.location)
                     self.location = copy(original_location)
                     field.location = tmp
-                    return self, field
-            field.location = copy(self.location)
-            self.location = copy(original_location)
+                    possible_mates.append((copy(self), copy(field)))
+            else:
+                field_is_mating = False
+            if not field_is_mating:
+                field.location = copy(self.location)
+                self.location = copy(original_location)
             if deleted_piece is not None:
                 enemy_pieces.append(deleted_piece)
-        return None
+        return possible_mates
 
     def attacks(self, attacked: Field, chessboard) -> bool:
         original_location = copy(self.location)

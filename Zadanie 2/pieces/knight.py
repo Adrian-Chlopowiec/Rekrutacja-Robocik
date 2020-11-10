@@ -38,7 +38,8 @@ class Knight(Piece):
                 if not (isinstance(field, Piece) and field.color == self.color):
                     self.possible_moves.append(field)
 
-    def find_mate(self, active_pieces: List[Piece], chessboard) -> Optional[Tuple[Piece, Field]]:
+    def find_mate(self, active_pieces: List[Piece], chessboard) -> List[Tuple[Piece, Field]]:
+        possible_mates: List[Tuple[Piece, Field]] = []
         original_location = copy(self.location)
         enemy_king = chessboard.get_king(self.enemy_color)
         enemy_pieces = chessboard.get_all_pieces(self.enemy_color)
@@ -52,6 +53,7 @@ class Knight(Piece):
             enemy_king.find_possible_moves(imaginary_board, active_pieces_copy)
             active_pieces_copy.remove(self)
 
+            field_is_mating = True
             if len(enemy_king.possible_moves) == 0:
                 if self.attacks(enemy_king, imaginary_board):
                     if imaginary_board.is_attacked(self, enemy_pieces) is None:
@@ -65,12 +67,15 @@ class Knight(Piece):
                     tmp = copy(self.location)
                     self.location = copy(original_location)
                     field.location = tmp
-                    return self, field
-            field.location = copy(self.location)
-            self.location = copy(original_location)
+                    possible_mates.append((self, field))
+            else:
+                field_is_mating = False
+            if not field_is_mating:
+                field.location = copy(self.location)
+                self.location = copy(original_location)
             if deleted_piece is not None:
                 enemy_pieces.append(deleted_piece)
-        return None
+        return possible_mates
 
     def attacks(self, attacked: Field, chessboard) -> bool:
         """

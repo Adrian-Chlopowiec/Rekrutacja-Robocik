@@ -43,12 +43,12 @@ class Piece(Field):
         pass
 
     @abstractmethod
-    def find_mate(self, active_pieces: List, chessboard) -> Optional[Tuple[Field]]:
+    def find_mate(self, active_pieces: List, chessboard) -> List[Tuple[Field]]:
         """
-        Looks for a checkmate for this piece\n
+        Looks for all checkmates for this piece\n
         :param active_pieces: Assisting pieces of the same color
         :param chessboard: Chessboard on which the pieces are.
-        :return: Piece which gives checkmate and field to which piece must be moved if such exist. Otherwise None.
+        :return: List of tuples of piece which gives checkmate and field to which piece must be moved.
         """
         pass
 

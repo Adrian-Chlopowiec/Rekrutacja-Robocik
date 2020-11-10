@@ -81,7 +81,7 @@ class Chessboard:
 
     def find_mate(self) -> NoReturn:
         """
-        Prepares white and black pieces and looks for a mate. Print appropriate message whether it finds mate or not.\n
+        Prepares white and black pieces and looks for mates. Print appropriate message whether it finds mate or not.\n
         :returns: None
         """
         self.__find_possible_mating_pieces(Color.WHITE)
@@ -90,35 +90,40 @@ class Chessboard:
         self.__find_possible_mating_pieces(Color.BLACK)
         self.__find_moves_for(queue_to_list(self.possible_mating_blacks))
 
-        mate = self.__check_for_mates()
-        if mate is None:
+        mates = self.__check_for_mates()
+        if len(mates) == 0:
             print("Biały ani czarny nie może wygrać w jednym ruchu")
-        elif mate[0].color == Color.WHITE:
-            print("Biały może wygrać " + mate[0].to_string() + " - " + mate[1].to_string())
+        elif mates[0][0].color == Color.WHITE:
+            for mate in mates:
+                print("Biały może wygrać " + mate[0].to_string() + " - " + mate[1].to_string())
         else:
-            print("Czarny może wygrać " + mate[0].to_string() + " - " + mate[1].to_string())
+            for mate in mates:
+                print("Czarny może wygrać " + mate[0].to_string() + " - " + mate[1].to_string())
 
-    def __check_for_mates(self) -> Optional[Tuple[Union[Piece, Field]]]:
+    def __check_for_mates(self) -> List[Tuple[Piece, Field]]:
         """
-        For every possible mating piece of each color check if it can give a checkmate.
+        For every possible mating piece of each color find checkmates if there are any.
         Firstly does it for white pieces and then for black.\n
 
-        :returns: tuple of piece giving a checkmate and a field to move it to give the mate, if such exist else None.
+        :returns: List of tuples of piece giving a checkmate and a field to move it to give the mate.
         """
         active_white_pieces = queue_to_list(self.possible_mating_whites)
         active_white_pieces.append(self.get_king(Color.WHITE))
+        mates = []
         for piece in active_white_pieces:
-            mate = piece.find_mate(active_white_pieces, self)
-            if mate is not None:
-                return mate
+            if not isinstance(piece, King):
+                mates.extend(piece.find_mate(active_white_pieces, self))
+
+        if len(mates) != 0:
+            return mates
 
         active_black_pieces = queue_to_list(self.possible_mating_blacks)
         active_black_pieces.append(self.get_king(Color.BLACK))
         for piece in active_black_pieces:
-            mate = piece.find_mate(active_black_pieces, self)
-            if mate is not None:
-                return mate
-        return None
+            if not isinstance(piece, King):
+                mates.extend(piece.find_mate(active_black_pieces, self))
+
+        return mates
 
     def __find_possible_mating_pieces(self, ally_color: Color) -> NoReturn:
         """
